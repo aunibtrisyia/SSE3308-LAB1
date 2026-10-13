@@ -89,7 +89,7 @@ function App() {
           <div className="brand-mark">H</div>
           <div>
             <p className="brand-name">HazeWatch</p>
-            <span className="brand-tag">Environment intelligence</span>
+            <span className="brand-tag">Clearer air starts here</span>
           </div>
         </div>
 
@@ -111,12 +111,13 @@ function App() {
             </p>
 
             <div className="hero-actions">
-              <button type="button" className="primary-btn">View live conditions</button>
+              <a className="primary-btn" href="#conditions">View air conditions <span aria-hidden="true">↗</span></a>
               <a href="#prepare" className="secondary-link">Preparedness guide</a>
             </div>
           </div>
 
           <div className="hero-panel" aria-label="Air quality overview">
+            <div className="sample-label">Sample dashboard data</div>
             <div className="aqi-ring">
               <div className="aqi-content">
                 <span>Current AQI</span>
@@ -145,10 +146,10 @@ function App() {
           ))}
         </section>
 
-        <section className="overview-panel">
+        <section className="overview-panel" id="conditions">
           <div className="panel-header">
             <div>
-              <p className="eyebrow small">Regional outlook</p>
+              <p className="eyebrow small">Regional outlook · Sample data</p>
               <h2>Air quality around you</h2>
             </div>
             <span className="alert-tag">{current.status}</span>
