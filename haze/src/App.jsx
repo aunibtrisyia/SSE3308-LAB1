@@ -1,285 +1,310 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import './App.css'
 
-const zoneData = {
-  Downtown: {
-    aqi: 168,
-    status: 'Unhealthy',
-    pm25: '87 µg/m³',
-    humidity: '72%',
-    visibility: '2.1 km',
-    temperature: '30°C',
-    checklist: [
-      'Wear an N95 mask outdoors',
-      'Limit intense exercise',
-      'Keep windows closed if possible',
-    ],
-  },
-  'School Zone': {
-    aqi: 122,
-    status: 'Sensitive groups',
-    pm25: '62 µg/m³',
-    humidity: '74%',
-    visibility: '3.4 km',
-    temperature: '29°C',
-    checklist: [
-      'Monitor children with asthma',
-      'Reduce outdoor recess time',
-      'Use clean-air rooms indoors',
-    ],
-  },
-  'Coastal Road': {
-    aqi: 93,
-    status: 'Moderate',
-    pm25: '41 µg/m³',
-    humidity: '68%',
-    visibility: '5.6 km',
-    temperature: '31°C',
-    checklist: [
-      'Avoid peak-hour traffic',
-      'Keep hydration levels up',
-      'Check air quality before workouts',
-    ],
-  },
+const locations = [
+  { id: 'kl-city', state: 'Kuala Lumpur', area: 'Kuala Lumpur City Centre', region: 'Central', aqi: 128, pm25: 46, temperature: 32, humidity: 71, updated: '8 min ago' },
+  { id: 'putrajaya', state: 'Putrajaya', area: 'Presint 9', region: 'Central', aqi: 82, pm25: 26, temperature: 31, humidity: 74, updated: '12 min ago' },
+  { id: 'shah-alam', state: 'Selangor', area: 'Shah Alam', region: 'Central', aqi: 116, pm25: 41, temperature: 32, humidity: 72, updated: '5 min ago' },
+  { id: 'petaling-jaya', state: 'Selangor', area: 'Petaling Jaya', region: 'Central', aqi: 94, pm25: 31, temperature: 31, humidity: 75, updated: '9 min ago' },
+  { id: 'klang', state: 'Selangor', area: 'Klang', region: 'Central', aqi: 153, pm25: 58, temperature: 32, humidity: 78, updated: '6 min ago' },
+  { id: 'seremban', state: 'Negeri Sembilan', area: 'Seremban', region: 'Central', aqi: 72, pm25: 22, temperature: 30, humidity: 79, updated: '14 min ago' },
+  { id: 'ayer-keroh', state: 'Melaka', area: 'Ayer Keroh', region: 'Southern', aqi: 86, pm25: 27, temperature: 31, humidity: 78, updated: '13 min ago' },
+  { id: 'ipoh', state: 'Perak', area: 'Ipoh', region: 'Northern', aqi: 64, pm25: 19, temperature: 30, humidity: 81, updated: '11 min ago' },
+  { id: 'george-town', state: 'Penang', area: 'George Town', region: 'Northern', aqi: 108, pm25: 37, temperature: 31, humidity: 77, updated: '7 min ago' },
+  { id: 'alor-setar', state: 'Kedah', area: 'Alor Setar', region: 'Northern', aqi: 48, pm25: 12, temperature: 30, humidity: 82, updated: '16 min ago' },
+  { id: 'kangar', state: 'Perlis', area: 'Kangar', region: 'Northern', aqi: 39, pm25: 9, temperature: 29, humidity: 84, updated: '18 min ago' },
+  { id: 'kota-bharu', state: 'Kelantan', area: 'Kota Bharu', region: 'East Coast', aqi: 57, pm25: 17, temperature: 29, humidity: 85, updated: '13 min ago' },
+  { id: 'kuala-terengganu', state: 'Terengganu', area: 'Kuala Terengganu', region: 'East Coast', aqi: 44, pm25: 11, temperature: 29, humidity: 83, updated: '15 min ago' },
+  { id: 'kuantan', state: 'Pahang', area: 'Kuantan', region: 'East Coast', aqi: 91, pm25: 29, temperature: 30, humidity: 80, updated: '10 min ago' },
+  { id: 'johor-bahru', state: 'Johor', area: 'Johor Bahru', region: 'Southern', aqi: 137, pm25: 49, temperature: 32, humidity: 73, updated: '4 min ago' },
+  { id: 'batu-pahat', state: 'Johor', area: 'Batu Pahat', region: 'Southern', aqi: 68, pm25: 21, temperature: 31, humidity: 77, updated: '17 min ago' },
+  { id: 'kota-kinabalu', state: 'Sabah', area: 'Kota Kinabalu', region: 'East Malaysia', aqi: 52, pm25: 15, temperature: 29, humidity: 82, updated: '12 min ago' },
+  { id: 'sandakan', state: 'Sabah', area: 'Sandakan', region: 'East Malaysia', aqi: 34, pm25: 8, temperature: 29, humidity: 86, updated: '19 min ago' },
+  { id: 'kuching', state: 'Sarawak', area: 'Kuching', region: 'East Malaysia', aqi: 76, pm25: 24, temperature: 30, humidity: 81, updated: '9 min ago' },
+  { id: 'miri', state: 'Sarawak', area: 'Miri', region: 'East Malaysia', aqi: 42, pm25: 10, temperature: 29, humidity: 84, updated: '16 min ago' },
+  { id: 'labuan', state: 'Labuan', area: 'Victoria', region: 'East Malaysia', aqi: 29, pm25: 7, temperature: 29, humidity: 82, updated: '20 min ago' },
+]
+
+const states = [
+  'Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Penang',
+  'Perak', 'Perlis', 'Sabah', 'Sarawak', 'Selangor', 'Terengganu',
+  'Kuala Lumpur', 'Labuan', 'Putrajaya',
+]
+
+const filters = [
+  { value: 'all', label: 'All readings' },
+  { value: 'critical', label: 'Critical' },
+  { value: 'mid', label: 'Mid' },
+  { value: 'low', label: 'Low' },
+]
+
+const trendHours = ['6 AM', '9 AM', '12 PM', '3 PM', '6 PM', 'Now']
+const trendOffsets = [-28, -21, -13, 4, 12, 0]
+
+function getSeverity(aqi) {
+  if (aqi <= 50) return 'low'
+  if (aqi <= 100) return 'mid'
+  return 'critical'
 }
 
-const keyMetrics = [
-  { label: 'AQI', value: '168', note: 'Smoke concentration is elevated' },
-  { label: 'PM2.5', value: '87', note: 'Fine particles remain hazardous' },
-  { label: 'Visibility', value: '2.1 km', note: 'Reduced by suspended pollutants' },
-]
-
-const hazeTrend = [
-  { hour: '6 AM', value: 42 },
-  { hour: '9 AM', value: 58 },
-  { hour: '12 PM', value: 74 },
-  { hour: '3 PM', value: 94 },
-  { hour: '6 PM', value: 88 },
-  { hour: '9 PM', value: 69 },
-]
-
-const quickActions = [
-  'Use a properly fitted mask whenever outside',
-  'Keep ventilation systems filtered and windows shut during peak haze',
-  'Reduce outdoor exercise for children and older adults',
-  'Create cleaner indoor spaces with HEPA filtration where possible',
-]
-
-const symptoms = [
-  'Irritated eyes, throat, or nose',
-  'Dry cough, wheezing, or shortness of breath',
-  'Headache, dizziness, or unusual fatigue',
-  'Asthma flare-ups or worsening allergy symptoms',
-]
-
-const responseSteps = [
-  'Activate air-quality alerts for staff and residents',
-  'Schedule outdoor activities away from peak haze hours',
-  'Keep emergency contact and health guidance ready',
-]
+function getSeverityLabel(severity) {
+  return { low: 'Low', mid: 'Mid · Moderate', critical: 'Critical' }[severity]
+}
 
 function App() {
-  const [activeZone, setActiveZone] = useState('Downtown')
-  const current = zoneData[activeZone]
+  const [selectedId, setSelectedId] = useState('kl-city')
+  const [selectedState, setSelectedState] = useState('All states')
+  const [activeFilter, setActiveFilter] = useState('all')
+  const [search, setSearch] = useState('')
+  const [sortByHighest, setSortByHighest] = useState(true)
+
+  const selected = locations.find((location) => location.id === selectedId) ?? locations[0]
+  const counts = locations.reduce((result, location) => {
+    result[getSeverity(location.aqi)] += 1
+    return result
+  }, { critical: 0, mid: 0, low: 0 })
+
+  const visibleLocations = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    return locations
+      .filter((location) => selectedState === 'All states' || location.state === selectedState)
+      .filter((location) => activeFilter === 'all' || getSeverity(location.aqi) === activeFilter)
+      .filter((location) => !query || `${location.area} ${location.state} ${location.region}`.toLowerCase().includes(query))
+      .sort((first, second) => sortByHighest ? second.aqi - first.aqi : first.aqi - second.aqi)
+  }, [activeFilter, search, selectedState, sortByHighest])
+
+  const trendValues = trendOffsets.map((offset) => Math.max(12, Math.min(190, selected.aqi + offset)))
+  const highestTrend = Math.max(...trendValues)
+
+  function clearFilters() {
+    setSelectedState('All states')
+    setActiveFilter('all')
+    setSearch('')
+  }
 
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div className="brand-wrap">
-          <div className="brand-mark">H</div>
-          <div>
-            <p className="brand-name">HazeWatch</p>
-            <span className="brand-tag">Clearer air starts here</span>
-          </div>
-        </div>
+        <a className="brand-wrap" href="#overview" aria-label="HazeWatch home">
+          <span className="brand-mark" aria-hidden="true"><span /></span>
+          <span>
+            <span className="brand-name">haze<span>watch</span></span>
+            <span className="brand-tag">Malaysia air quality tracker</span>
+          </span>
+        </a>
 
         <nav className="topnav" aria-label="Main navigation">
-          <a href="#overview">Overview</a>
-          <a href="#pattern">Regional pattern</a>
-          <a href="#prepare">Preparedness</a>
+          <a className="nav-active" href="#overview">Overview</a>
+          <a href="#stations">Stations</a>
+          <a href="#health-guide">Health guide</a>
         </nav>
+
+        <div className="data-badge"><span /> Demo dashboard</div>
       </header>
 
       <main className="page">
         <section className="hero" id="overview">
           <div className="hero-copy">
-            <p className="eyebrow">Haze awareness</p>
-            <h1>Air quality is changing. So should your response.</h1>
+            <p className="eyebrow"><span className="live-dot" /> NATIONAL AIR QUALITY · MALAYSIA</p>
+            <h1>A clearer view of the air <span>around you.</span></h1>
             <p className="lead">
-              Smoke, dust, and fine particles can affect health quickly. Stay ahead of haze conditions,
-              protect vulnerable groups, and plan safer routines before air quality worsens.
+              Explore sample Air Pollutant Index (API) readings by state and town.
+              Know what the numbers mean and make a safer plan for your day.
             </p>
-
             <div className="hero-actions">
-              <a className="primary-btn" href="#conditions">View air conditions <span aria-hidden="true">↗</span></a>
-              <a href="#prepare" className="secondary-link">Preparedness guide</a>
+              <a className="primary-btn" href="#stations">Explore locations <span aria-hidden="true">↓</span></a>
+              <span className="sample-note"><span className="info-icon">i</span> Educational sample data — not live readings</span>
             </div>
           </div>
 
-          <div className="hero-panel" aria-label="Air quality overview">
-            <div className="sample-label">Sample dashboard data</div>
-            <div className="aqi-ring">
-              <div className="aqi-content">
-                <span>Current AQI</span>
-                <strong>{current.aqi}</strong>
-                <small>{current.status}</small>
+          <article className={`hero-panel severity-${getSeverity(selected.aqi)}`} aria-label={`Selected reading for ${selected.area}`}>
+            <div className="hero-panel-top">
+              <div>
+                <span className="panel-kicker">SELECTED LOCATION</span>
+                <h2>{selected.area}</h2>
+                <p>{selected.state}, Malaysia</p>
+              </div>
+              <span className={`severity-pill ${getSeverity(selected.aqi)}`}>{getSeverityLabel(getSeverity(selected.aqi))}</span>
+            </div>
+            <div className="aqi-display">
+              <div className="aqi-number">{selected.aqi}</div>
+              <div>
+                <span className="aqi-caption">AIR POLLUTANT INDEX</span>
+                <p>{selected.aqi <= 50 ? 'Air quality is good' : selected.aqi <= 100 ? 'Generally acceptable' : 'Sensitive groups take care'}</p>
               </div>
             </div>
-            <div className="mini-bars" aria-hidden="true">
-              <span style={{ height: '38%' }} />
-              <span style={{ height: '52%' }} />
-              <span style={{ height: '70%' }} />
-              <span style={{ height: '64%' }} />
-              <span style={{ height: '83%' }} />
-              <span style={{ height: '92%' }} />
+            <div className="aqi-scale" aria-label="API scale from low to critical">
+              <span className="scale-low" />
+              <span className="scale-mid" />
+              <span className="scale-critical" />
+              <span className="scale-marker" style={{ left: `${Math.min(selected.aqi / 2, 98)}%` }} />
             </div>
-          </div>
+            <div className="scale-labels"><span>Low 0–50</span><span>Mid 51–100</span><span>Critical 101+</span></div>
+            <div className="hero-panel-foot"><span>◷ {selected.updated}</span><span>Sample station reading</span></div>
+          </article>
         </section>
 
-        <section className="stats-grid" aria-label="Key haze indicators">
-          {keyMetrics.map((metric) => (
-            <article key={metric.label} className="stat-card">
-              <p>{metric.label}</p>
-              <h2>{metric.value}</h2>
-              <span>{metric.note}</span>
-            </article>
-          ))}
+        <section className="stats-grid" aria-label="Malaysia sample overview">
+          <article className="stat-card">
+            <div className="stat-icon icon-purple">⌖</div>
+            <div><p>Sample stations</p><h2>{locations.length}<span> locations</span></h2><small>Across 16 states &amp; territories</small></div>
+          </article>
+          <article className="stat-card critical-stat">
+            <div className="stat-icon icon-red">!</div>
+            <div><p>Critical API</p><h2>{counts.critical}<span> stations</span></h2><small>Above 100 · take precautions</small></div>
+          </article>
+          <article className="stat-card mid-stat">
+            <div className="stat-icon icon-amber">◒</div>
+            <div><p>Mid API</p><h2>{counts.mid}<span> stations</span></h2><small>51–100 · sensitive groups take care</small></div>
+          </article>
+          <article className="stat-card low-stat">
+            <div className="stat-icon icon-green">✓</div>
+            <div><p>Low API</p><h2>{counts.low}<span> stations</span></h2><small>0–50 · air quality is good</small></div>
+          </article>
         </section>
 
-        <section className="overview-panel" id="conditions">
-          <div className="panel-header">
+        <section className="locations-panel" id="stations">
+          <div className="section-heading">
             <div>
-              <p className="eyebrow small">Regional outlook · Sample data</p>
-              <h2>Air quality around you</h2>
+              <p className="eyebrow small">EXPLORE THE COUNTRY</p>
+              <h2>Conditions by location</h2>
+              <p className="section-subtitle">Choose a state or search for a town to see its sample reading.</p>
             </div>
-            <span className="alert-tag">{current.status}</span>
+            <label className="state-select-label">
+              <span>Filter by state</span>
+              <select value={selectedState} onChange={(event) => setSelectedState(event.target.value)}>
+                <option>All states</option>
+                {states.map((state) => <option key={state}>{state}</option>)}
+              </select>
+            </label>
           </div>
 
-          <div className="zone-layout">
-            <div className="zone-switcher" aria-label="Choose a location">
-              {Object.keys(zoneData).map((zone) => (
+          <div className="location-toolbar">
+            <div className="filter-tabs" role="group" aria-label="Filter readings by API level">
+              {filters.map((filter) => (
                 <button
-                  key={zone}
+                  key={filter.value}
                   type="button"
-                  className={zone === activeZone ? 'zone-btn active' : 'zone-btn'}
-                  onClick={() => setActiveZone(zone)}
+                  className={`filter-tab ${activeFilter === filter.value ? 'active' : ''} ${filter.value}`}
+                  aria-pressed={activeFilter === filter.value}
+                  onClick={() => setActiveFilter(filter.value)}
                 >
-                  {zone}
+                  {filter.value !== 'all' && <span className={`filter-dot ${filter.value}`} />}
+                  {filter.label}
+                  {filter.value !== 'all' && <span className="filter-count">{counts[filter.value]}</span>}
                 </button>
               ))}
             </div>
-
-            <div className="status-card">
-              <div className="status-head">
-                <span className="status-label">Selected area</span>
-                <strong>{activeZone}</strong>
-              </div>
-
-              <div className="status-body">
-                <div>
-                  <span>Temperature</span>
-                  <strong>{current.temperature}</strong>
-                </div>
-                <div>
-                  <span>Humidity</span>
-                  <strong>{current.humidity}</strong>
-                </div>
-                <div>
-                  <span>Visibility</span>
-                  <strong>{current.visibility}</strong>
-                </div>
-              </div>
+            <div className="toolbar-actions">
+              <label className="search-box">
+                <span aria-hidden="true">⌕</span>
+                <input
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search town or state"
+                  aria-label="Search town, state, or region"
+                />
+              </label>
+              <button className="sort-button" type="button" onClick={() => setSortByHighest((value) => !value)}>
+                <span aria-hidden="true">↕</span> API {sortByHighest ? 'high to low' : 'low to high'}
+              </button>
             </div>
           </div>
 
-          <div className="condition-grid">
-            <div className="condition-main">
-              <div className="reading-row">
-                <span>PM2.5</span>
-                <strong>{current.pm25}</strong>
-              </div>
-              <div className="reading-row">
-                <span>Humidity</span>
-                <strong>{current.humidity}</strong>
-              </div>
-              <div className="reading-row">
-                <span>Visibility</span>
-                <strong>{current.visibility}</strong>
-              </div>
-            </div>
+          <div className="results-line">
+            <span>Showing <strong>{visibleLocations.length}</strong> of {locations.length} sample stations</span>
+            {(selectedState !== 'All states' || activeFilter !== 'all' || search) && (
+              <button type="button" onClick={clearFilters}>Clear filters <span aria-hidden="true">×</span></button>
+            )}
+          </div>
 
-            <div className="checklist-box">
-              {current.checklist.map((item) => (
-                <div key={item} className="check-item">
-                  <span className="check-dot" aria-hidden="true" />
-                  <p>{item}</p>
+          {visibleLocations.length > 0 ? (
+            <div className="location-grid">
+              {visibleLocations.map((location) => {
+                const severity = getSeverity(location.aqi)
+                return (
+                  <button
+                    key={location.id}
+                    type="button"
+                    className={`location-card ${selectedId === location.id ? 'selected' : ''}`}
+                    onClick={() => setSelectedId(location.id)}
+                    aria-pressed={selectedId === location.id}
+                  >
+                    <span className={`location-status ${severity}`} />
+                    <span className="location-card-top">
+                      <span className="location-area">{location.area}</span>
+                      <span className={`severity-pill ${severity}`}>{getSeverityLabel(severity)}</span>
+                    </span>
+                    <span className="location-state">{location.state} <span>·</span> {location.region}</span>
+                    <span className="location-card-bottom">
+                      <span className="location-aqi"><strong>{location.aqi}</strong><span>API</span></span>
+                      <span className="location-pm">PM2.5 <strong>{location.pm25} µg/m³</strong></span>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <span aria-hidden="true">⌕</span>
+              <h3>No locations match your filters</h3>
+              <p>Try another town or clear the selected filters.</p>
+              <button type="button" onClick={clearFilters}>Clear filters</button>
+            </div>
+          )}
+          <p className="data-disclaimer">All readings shown are illustrative sample data for a student project and do not represent current official API measurements.</p>
+        </section>
+
+        <section className="insights-grid">
+          <article className="trend-card">
+            <div className="section-heading compact">
+              <div>
+                <p className="eyebrow small">DAILY PATTERN · SAMPLE</p>
+                <h2>API through the day</h2>
+                <p className="section-subtitle">Illustrative trend for {selected.area}</p>
+              </div>
+              <span className={`severity-pill ${getSeverity(selected.aqi)}`}>Current {selected.aqi}</span>
+            </div>
+            <div className="trend-chart" role="img" aria-label={`Illustrative API trend for ${selected.area}: ${trendValues.join(', ')}`}>
+              {trendValues.map((value, index) => (
+                <div className="trend-column" key={trendHours[index]}>
+                  <span className="trend-value">{value}</span>
+                  <div className="trend-track"><span className={`trend-bar ${getSeverity(value)}`} style={{ height: `${Math.max(10, value / highestTrend * 100)}%` }} /></div>
+                  <span className="trend-hour">{trendHours[index]}</span>
                 </div>
               ))}
             </div>
-          </div>
-        </section>
-
-        <section className="trend-card" id="pattern">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow small">Haze trend</p>
-              <h2>24-hour air quality pattern</h2>
-            </div>
-            <span className="alert-tag">Peak at 3 PM</span>
-          </div>
-
-          <div className="trend-chart" aria-hidden="true">
-            {hazeTrend.map((point) => (
-              <div key={point.hour} className="trend-column">
-                <div className="trend-bar" style={{ height: `${point.value}%` }} />
-                <span>{point.hour}</span>
-              </div>
-            ))}
-          </div>
-
-          <p className="trend-summary">
-            PM2.5 levels rise sharply during the afternoon and remain elevated into the evening,
-            meaning outdoor exposure should be reduced and cleaner indoor spaces should be prioritized.
-          </p>
-        </section>
-
-        <section className="info-grid" id="prepare">
-          <article className="info-card">
-            <p className="eyebrow small">Preparedness</p>
-            <h3>Recommended actions</h3>
-            <ul className="tip-list">
-              {quickActions.map((action) => (
-                <li key={action}>{action}</li>
-              ))}
-            </ul>
+            <div className="trend-foot"><span><i className="trend-legend" /> API reading</span><span>Sample trend · not a forecast</span></div>
           </article>
 
-          <article className="info-card">
-            <p className="eyebrow small">Health watch</p>
-            <h3>Early warning signs</h3>
-            <ul className="tip-list warning-list">
-              {symptoms.map((symptom) => (
-                <li key={symptom}>{symptom}</li>
-              ))}
-            </ul>
+          <article className="guide-card" id="health-guide">
+            <p className="eyebrow small">KNOW YOUR API</p>
+            <h2>What should I do?</h2>
+            <p className="section-subtitle">Simple steps for the selected reading.</p>
+            <div className={`guidance-callout ${getSeverity(selected.aqi)}`}>
+              <span className="guidance-icon">{selected.aqi > 100 ? '!' : selected.aqi > 50 ? '◒' : '✓'}</span>
+              <div>
+                <strong>{getSeverityLabel(getSeverity(selected.aqi))} · API {selected.aqi}</strong>
+                <p>{selected.aqi > 100
+                  ? 'Limit prolonged outdoor activity. Children, older adults, and people with breathing or heart conditions should take extra care.'
+                  : selected.aqi > 50
+                    ? 'Most people can continue usual activities. Sensitive individuals should consider reducing strenuous outdoor exercise.'
+                    : 'Enjoy outdoor activities as usual. Keep checking local conditions as they can change.'}</p>
+              </div>
+            </div>
+            <p className="health-note">If you experience breathing difficulty or persistent symptoms, seek advice from a healthcare professional.</p>
           </article>
         </section>
 
-        <section className="response-panel">
-          <div>
-            <p className="eyebrow small">Response framework</p>
-            <h3>Practical planning for schools, teams, and communities</h3>
-          </div>
-
-          <div className="response-grid">
-            {responseSteps.map((step, index) => (
-              <div key={step} className="response-step">
-                <span>{String(index + 1).padStart(2, '0')}</span>
-                <p>{step}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+        <footer className="footer">
+          <a className="brand-wrap footer-brand" href="#overview">
+            <span className="brand-mark" aria-hidden="true"><span /></span>
+            <span className="brand-name">haze<span>watch</span></span>
+          </a>
+          <p>Know the air. Make a safer choice. <span>·</span> Student project demonstration</p>
+          <a className="back-top" href="#overview">Back to top ↑</a>
+        </footer>
       </main>
     </div>
   )
